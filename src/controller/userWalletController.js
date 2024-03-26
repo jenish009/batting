@@ -11,10 +11,10 @@ const getUserWallet = async (req, res) => {
             return res.status(404).json({ error: 'User wallet not found' });
         }
 
-        return res.json(userWallet);
+        return res.json({ success: true, data: userWallet });
     } catch (error) {
         console.error('Error fetching user wallet:', error);
-        return res.status(500).json({ error: 'Internal server error' });
+        return res.status(500).json({ success: false, error: 'Internal server error' });
     }
 }
 

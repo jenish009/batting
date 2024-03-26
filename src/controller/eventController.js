@@ -21,10 +21,10 @@ const createEvent = async (req, res) => {
 
         await newEvent.save();
 
-        return res.status(201).json({ message: 'Event added successfully', event: newEvent });
+        return res.status(201).json({ success: true, message: 'Event added successfully', event: newEvent });
     } catch (error) {
         console.error('Error adding event:', error);
-        return res.status(500).json({ error: 'Internal server error' });
+        return res.status(500).json({ success: false, error: 'Internal server error' });
     }
 }
 
@@ -74,10 +74,10 @@ const userRegistration = async (req, res) => {
         event.registeredUsers.push(userId);
         event.save();
 
-        return res.status(200).json({ message: 'User registered successfully', ticketNumber });
+        return res.status(200).json({ success: true, message: 'User registered successfully', ticketNumber });
     } catch (error) {
         console.error('Error registering user:', error);
-        return res.status(500).json({ error: 'Internal server error' });
+        return res.status(500).json({ success: false, error: 'Internal server error' });
     }
 }
 
@@ -98,10 +98,10 @@ const getEventByUserId = async (req, res) => {
             return { ...event.toObject(), registeredUsersCount };
         }));
 
-        return res.json(eventsWithCounts);
+        return res.json({ success: true, data: eventsWithCounts });
     } catch (error) {
         console.error('Error fetching events:', error);
-        return res.status(500).json({ error: 'Internal server error' });
+        return res.status(500).json({ success: false, error: 'Internal server error' });
     }
 }
 
@@ -149,10 +149,10 @@ const getEventById = async (req, res) => {
 
         const response = { ...event, userTickets, winningPercentage };
 
-        return res.json(response);
+        return res.json({ success: true, data: response });
     } catch (error) {
         console.error('Error fetching events:', error);
-        return res.status(500).json({ error: 'Internal server error' });
+        return res.status(500).json({ success: false, error: 'Internal server error' });
     }
 }
 
@@ -223,10 +223,10 @@ const luckyDraw = async (req, res) => {
 
         await eventModel.findByIdAndUpdate(eventId, { status: 'finished' });
 
-        return res.json({ message: 'Lucky draw completed successfully' });
+        return res.json({ success: true, message: 'Lucky draw completed successfully' });
     } catch (error) {
         console.error('Error in lucky draw:', error);
-        return res.status(500).json({ error: 'Internal server error' });
+        return res.status(500).json({ success: false, error: 'Internal server error' });
     }
 }
 
