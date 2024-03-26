@@ -55,15 +55,12 @@ const signup = async (req, res) => {
 
         await newUserWallet.save();
 
-        return res.status(201).json({ newUser });
+        return res.status(201).json({ success: true, data: newUser });
     } catch (error) {
         console.error('Error registering user:', error);
         return res.status(500).json({ error: 'Internal server error' });
     }
 }
-
-
-
 
 const isExistingUser = async (req, res) => {
     try {
@@ -100,7 +97,7 @@ const login = async (req, res) => {
             return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        return res.status(200).json({ message: 'Login successful', data: user });
+        return res.status(200).json({ success: true, message: 'Login successful', data: user });
     } catch (error) {
         console.error('Error logging in user:', error);
         return res.status(500).json({ error: 'Internal server error' });
@@ -126,7 +123,7 @@ const updateProfile = async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        return res.json({ message: 'User details updated successfully', user: updatedUser });
+        return res.json({ success: true, message: 'User details updated successfully', user: updatedUser });
     } catch (error) {
         console.error('Error updating user details:', error);
         return res.status(500).json({ error: 'Internal server error' });
