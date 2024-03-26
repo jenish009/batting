@@ -28,7 +28,7 @@ const signup = async (req, res) => {
         } else {
             const newUser = new userModel({
                 email,
-                password: await bcrypt.hash(password, 10) // Hash the password
+                password: password // Hash the password
             });
 
             await newUser.save();
