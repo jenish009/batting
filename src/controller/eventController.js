@@ -1,7 +1,7 @@
 const { eventModel, userWalletModel, transactionModel, UserRegistrationModel, eventResultModel, userModel } = require('../models');
 const { generateUniqueTicketNumber } = require('../../utils');
 const mongoose = require('mongoose');
-const moment = require('moment');
+const moment = require('moment-timezone');
 
 const createEvent = async (req, res) => {
     const { time, maxRegistrations, entryPrice, name, status, winningPrices } = req.body;
@@ -88,21 +88,21 @@ const getEventByUserId = async (req, res) => {
 
         let matchQuery = {};
         if (myevent) {
-            const todayStart = moment().startOf('day').add(12, 'hours').add(30, 'minutes');
-            const todayEnd = todayStart.clone().add(23, 'hours').add(59, 'minutes');
-            console.log("todayStart", todayStart)
-            console.log("todayEnd", todayEnd)
+            const todayIST = moment.tz(moment.tz('Asia/Kolkata').startOf('day'), 'Asia/Kolkata').utc().toDate();
+            console.log(todayIST)
+
             matchQuery = {
-                registeredUsers: { $in: [userId] },
+                registeredUsers: { $in: [new mongoose.Types.ObjectId(userId)] },
                 time: {
-                    $gte: todayStart.toDate(),
-                    $lte: todayEnd.toDate()
+                    $gte: todayIST,
+                    $lte: moment(todayIST).add(1, 'day').toDate()
                 }
             };
 
         } else {
             matchQuery = { registeredUsers: { $ne: new mongoose.Types.ObjectId(userId) }, time: { $gte: new Date() } };
         }
+        const totalEventsCount = await eventModel.countDocuments(matchQuery); // Count total events
 
         const events = await eventModel.aggregate([
             { $match: matchQuery },
@@ -123,15 +123,14 @@ const getEventByUserId = async (req, res) => {
                 }
             }
         ]);
+        const totalPages = Math.ceil(totalEventsCount / limit); // Calculate total pages
 
         const eventsWithCounts = events.map((event) => {
             let totalWinningAmount = 0;
-            event.winningPrices.forEach(price => {
-                const priceValues = Object.entries(price)[0]; // Get the first (and only) entry in the price object
-                const winningPosition = priceValues[0]; // Winning position or range
-                const amount = priceValues[1]; // Winning amount
+            event.winningPrices.forEach(obj => {
+                const winningPosition = obj.rank
+                const amount = obj.amount
 
-                // Check if the winning position is a range
                 if (winningPosition.includes('-')) {
                     const [start, end] = winningPosition.split('-').map(Number);
                     const winnersInRange = end - start + 1;
@@ -144,17 +143,12 @@ const getEventByUserId = async (req, res) => {
             return { ...event, totalWinningAmount };
         });
 
-        return res.json({ success: true, data: eventsWithCounts });
+        return res.json({ success: true, data: eventsWithCounts, totalPages });
     } catch (error) {
         console.error('Error fetching events:', error);
         return res.status(500).json({ success: false, error: error.message });
     }
 }
-
-
-
-
-
 
 const getEventById = async (req, res) => {
     try {
@@ -264,7 +258,6 @@ const luckyDraw = async (req, res) => {
         const { eventId } = req.query;
 
         const event = await eventModel.findById(eventId);
-
         if (!event) {
             return res.status(404).json({ error: 'Event not found' });
         }
@@ -280,14 +273,13 @@ const luckyDraw = async (req, res) => {
         }
 
         const winningPrices = event.winningPrices;
-        const totalWinnersNeeded = Object.keys(event.winningPrices[event.winningPrices.length - 1])[0].split("-")[1] || Object.keys(event.winningPrices[event.winningPrices.length - 1])[0].split("-")[0];
-
+        const totalWinnersNeeded = event.winningPrices[event.winningPrices.length - 1].rank.split("-")[1] || event.winningPrices[event.winningPrices.length - 1].rank.split("-")[0]
         const eventResult = {};
 
         let totalWinners = 0;
         let ticketSelected = []
         for (const winningPrice of winningPrices) {
-            const priceKeys = Object.keys(winningPrice)[0];
+            const priceKeys = winningPrice.rank
             const [startRank, endRank] = priceKeys.split('-');
             let requiredTickets = 1;
 
@@ -302,13 +294,13 @@ const luckyDraw = async (req, res) => {
                 if (totalWinners < totalWinnersNeeded) {
                     const userWallet = await userWalletModel.findOneAndUpdate(
                         { userId: ticket.userId },
-                        { $inc: { balance: winningPrice[priceKeys] } },
+                        { $inc: { balance: winningPrice["amount"] } },
                         { upsert: true, new: true }
                     );
 
                     eventResult[ticket.ticketNumber] = {
                         userId: ticket.userId,
-                        winningPrice: winningPrice[priceKeys]
+                        winningPrice: winningPrice["amount"]
                     };
                     ticketSelected.push(ticket.ticketNumber)
                     totalWinners++;
