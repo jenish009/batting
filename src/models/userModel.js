@@ -28,6 +28,10 @@ const userSchema = new mongoose.Schema({
     mobileNumber: {
         type: String,
         trim: true
+    },
+    referralCode: {
+        type: String,
+        unique: true
     }
 }, { versionKey: false });
 

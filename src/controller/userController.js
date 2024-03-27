@@ -3,47 +3,42 @@ const { userModel, userWalletModel } = require('../models');
 const signup = async (req, res) => {
     const { email, password, name, mobileNumber } = req.body;
 
-    // Validate email format
     if (!email || !validateEmail(email)) {
         throw new Error('Invalid email');
     }
 
-    // Validate password format
     if (!password || !validatePassword(password)) {
         throw new Error('Invalid password');
     }
 
-    // Validate name
     if (!name) {
         throw new Error('Name is required');
     }
 
-    // Validate mobile number format
     if (!mobileNumber || !validateMobileNumber(mobileNumber)) {
         throw new Error('Invalid mobile number');
     }
 
     try {
-        // Check if the email is already in use
         const existingUserByEmail = await userModel.findOne({ email });
 
         if (existingUserByEmail) {
             throw new Error('Email already exists');
         }
 
-        // Check if the mobile number is already in use
         const existingUserByMobileNumber = await userModel.findOne({ mobileNumber });
 
         if (existingUserByMobileNumber) {
             throw new Error('Mobile number already exists');
         }
 
-        // Both email and mobile number are unique, proceed to create a new user
+        const referralCode = await generateReferralCode(name);
         const newUser = new userModel({
             email,
             password,
             name,
-            mobileNumber
+            mobileNumber,
+            referralCode
         });
 
         await newUser.save();
@@ -62,6 +57,25 @@ const signup = async (req, res) => {
     }
 }
 
+// Function to generate a unique referral code
+const generateReferralCode = async (name) => {
+    let referralCode;
+    let existingUserByReferralCode
+    do {
+        // Generate a random string
+        const randomString = Math.random().toString(36).substr(2, 5);
+        // Concatenate the first three characters of the name with the random string
+        referralCode = name.substring(0, 3).toUpperCase() + randomString;
+        // Check if the referral code already exists in the database
+        existingUserByReferralCode = await userModel.findOne({ referralCode });
+        // If the referral code already exists, generate a new one
+    } while (existingUserByReferralCode);
+    // Return the unique referral code
+    return referralCode;
+}
+
+
+
 const isExistingUser = async (req, res) => {
     try {
         const { email } = req.body;
@@ -75,7 +89,7 @@ const isExistingUser = async (req, res) => {
         const existingUser = await userModel.findOne({ email });
 
         // Return true if user exists, otherwise false
-        return res.json({ isExisting: !!existingUser });
+        return res.json({ success: true, isExisting: !!existingUser });
     } catch (error) {
         console.error('Error checking existing user:', error);
         return res.status(500).json({ success: false, error: error.message });

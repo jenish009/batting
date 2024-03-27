@@ -128,19 +128,71 @@ const getEventById = async (req, res) => {
                         },
                         { $project: { _id: 0, ticketNumber: 1 } }
                     ],
-                    as: 'userRegistrations'
+                    as: 'userRegistrationsTicket'
                 }
             },
-            { $project: { registeredUsers: 0 } }
+            { $project: { registeredUsers: 0 } },
+            {
+                $lookup: {
+                    from: 'eventresults',
+                    localField: '_id',
+                    foreignField: 'eventId',
+                    as: 'eventResult'
+                }
+            },
+            { $unwind: { path: '$eventResult', preserveNullAndEmptyArrays: true } },
+            {
+                $addFields: {
+                    'eventResult.resultWithNames': {
+                        $objectToArray: '$eventResult.result'
+                    }
+                }
+            },
+            {
+                $unwind: {
+                    path: '$eventResult.resultWithNames',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'eventResult.resultWithNames.v.userId',
+                    foreignField: '_id',
+                    as: 'userDetails'
+                }
+            },
+            {
+                $addFields: {
+                    'eventResult.resultWithNames.v.userName': { $arrayElemAt: ['$userDetails.name', 0] }
+                }
+            },
+            {
+                $group: {
+                    _id: '$_id',
+                    time: { $first: '$time' },
+                    maxRegistrations: { $first: '$maxRegistrations' },
+                    entryPrice: { $first: '$entryPrice' },
+                    name: { $first: '$name' },
+                    status: { $first: '$status' },
+                    winningPrices: { $first: '$winningPrices' },
+                    registeredUsersCount: { $first: '$registeredUsersCount' },
+                    userRegistrationsTicket: { $first: '$userRegistrationsTicket' },
+                    eventResult: { $push: '$eventResult.resultWithNames.v' },
+                }
+            }
         ]);
+
+
+
 
         if (eventAggregate.length === 0) {
             return res.status(404).json({ error: 'Event not found' });
         }
 
         const event = eventAggregate[0];
-        const userTickets = event.userRegistrations.map(registration => registration.ticketNumber);
-        delete event.userRegistrations;
+        const userTickets = event.userRegistrationsTicket.map(registration => registration.ticketNumber);
+        delete event.userRegistrationsTicket;
 
         const lastWinningPrice = event.winningPrices[event.winningPrices.length - 1];
         const maxWinningNumber = parseInt(Object.keys(lastWinningPrice)[0].split('-')[1]);
