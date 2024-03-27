@@ -8,13 +8,13 @@ const getUserWallet = async (req, res) => {
         const userWallet = await userWalletModel.findOne({ userId });
 
         if (!userWallet) {
-            return res.status(404).json({ error: 'User wallet not found' });
+            throw new Error('User wallet not found');
         }
 
         return res.json({ success: true, data: userWallet });
     } catch (error) {
         console.error('Error fetching user wallet:', error);
-        return res.status(500).json({ success: false, error: 'Internal server error' });
+        res.status(500).json({ success: false, error: 'Internal server error' });
     }
 }
 

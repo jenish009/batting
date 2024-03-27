@@ -47,7 +47,6 @@ const userRegistration = async (req, res) => {
         const entryFee = event.entryPrice;
         if (event.maxRegistrations <= event.registeredUsers.length) {
             return res.status(400).json({ error: 'Event is full' });
-
         }
         if (userWallet.balance < entryFee) {
             return res.status(400).json({ error: 'Insufficient balance' });
@@ -214,7 +213,6 @@ const luckyDraw = async (req, res) => {
                 }
             }
 
-
             if (totalWinners >= totalWinnersNeeded) {
                 break; // Exit the loop if we've reached the required number of winners
             }
@@ -229,19 +227,6 @@ const luckyDraw = async (req, res) => {
         return res.status(500).json({ success: false, error: 'Internal server error' });
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 module.exports = {
     createEvent, userRegistration, getEventByUserId, getEventById, luckyDraw
