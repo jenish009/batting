@@ -100,7 +100,7 @@ const getEventByUserId = async (req, res) => {
             };
 
         } else {
-            matchQuery = { registeredUsers: { $ne: new mongoose.Types.ObjectId(userId) }, time: { $gte: new Date() } };
+            matchQuery = { time: { $gte: new Date() } };
         }
         const totalEventsCount = await eventModel.countDocuments(matchQuery); // Count total events
 
@@ -240,11 +240,23 @@ const getEventById = async (req, res) => {
         const userTickets = event.userRegistrationsTicket.map(registration => registration.ticketNumber);
         delete event.userRegistrationsTicket;
 
-        const lastWinningPrice = event.winningPrices[event.winningPrices.length - 1];
-        const maxWinningNumber = parseInt(Object.keys(lastWinningPrice)[0].split('-')[1]);
+        const maxWinningNumber = event.winningPrices[event.winningPrices.length - 1].rank.split('-')[1];
         const winningPercentage = (maxWinningNumber * 100) / event.maxRegistrations;
+        let totalWinningAmount = 0;
+        event.winningPrices.forEach(obj => {
+            const winningPosition = obj.rank
+            const amount = obj.amount
 
-        const response = { ...event, userTickets, winningPercentage };
+            if (winningPosition.includes('-')) {
+                const [start, end] = winningPosition.split('-').map(Number);
+                const winnersInRange = end - start + 1;
+                totalWinningAmount += winnersInRange * amount;
+            } else {
+                totalWinningAmount += amount;
+            }
+        });
+
+        const response = { ...event, userTickets, winningPercentage, totalWinningAmount };
 
         return res.json({ success: true, data: response });
     } catch (error) {
