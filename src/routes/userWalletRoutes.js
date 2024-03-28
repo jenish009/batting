@@ -4,6 +4,8 @@ const { userWalletController } = require('../controller')
 
 router
     .get('/getUserWallet', userWalletController.getUserWallet)
+    .post('/withdrawMoney', userWalletController.withdrawMoney)
+
 
 
 
