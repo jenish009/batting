@@ -127,6 +127,9 @@ const getEventByUserId = async (req, res) => {
 
         const eventsWithCounts = events.map((event) => {
             let totalWinningAmount = 0;
+
+            const maxWinningNumber = event.winningPrices[event.winningPrices.length - 1].rank.split('-')[1];
+            const winningPercentage = (maxWinningNumber * 100) / event.maxRegistrations;
             event.winningPrices.forEach(obj => {
                 const winningPosition = obj.rank
                 const amount = obj.amount
@@ -140,7 +143,7 @@ const getEventByUserId = async (req, res) => {
                 }
             });
 
-            return { ...event, totalWinningAmount };
+            return { ...event, totalWinningAmount, winningPercentage };
         });
 
         return res.json({ success: true, data: eventsWithCounts, totalPages });
@@ -190,7 +193,15 @@ const getEventById = async (req, res) => {
             {
                 $addFields: {
                     'eventResult.resultWithNames': {
-                        $objectToArray: '$eventResult.result'
+                        $map: {
+                            input: '$eventResult.result',
+                            as: 'result',
+                            in: {
+                                ticketNumber: '$$result.ticketNumber',
+                                userId: '$$result.userId',
+                                winningPrice: '$$result.winningPrice'
+                            }
+                        }
                     }
                 }
             },
@@ -203,14 +214,14 @@ const getEventById = async (req, res) => {
             {
                 $lookup: {
                     from: 'users',
-                    localField: 'eventResult.resultWithNames.v.userId',
+                    localField: 'eventResult.resultWithNames.userId',
                     foreignField: '_id',
                     as: 'userDetails'
                 }
             },
             {
                 $addFields: {
-                    'eventResult.resultWithNames.v.userName': { $arrayElemAt: ['$userDetails.name', 0] }
+                    'eventResult.resultWithNames.userName': { $arrayElemAt: ['$userDetails.name', 0] }
                 }
             },
             {
@@ -224,13 +235,10 @@ const getEventById = async (req, res) => {
                     winningPrices: { $first: '$winningPrices' },
                     registeredUsersCount: { $first: '$registeredUsersCount' },
                     userRegistrationsTicket: { $first: '$userRegistrationsTicket' },
-                    eventResult: { $push: '$eventResult.resultWithNames.v' },
+                    eventResult: { $push: '$eventResult.resultWithNames' },
                 }
             }
         ]);
-
-
-
 
         if (eventAggregate.length === 0) {
             return res.status(404).json({ error: 'Event not found' });
@@ -265,6 +273,7 @@ const getEventById = async (req, res) => {
     }
 }
 
+
 const luckyDraw = async (req, res) => {
     try {
         const { eventId } = req.query;
@@ -286,7 +295,7 @@ const luckyDraw = async (req, res) => {
 
         const winningPrices = event.winningPrices;
         const totalWinnersNeeded = event.winningPrices[event.winningPrices.length - 1].rank.split("-")[1] || event.winningPrices[event.winningPrices.length - 1].rank.split("-")[0]
-        const eventResult = {};
+        const eventResult = [];
 
         let totalWinners = 0;
         let ticketSelected = []
@@ -310,10 +319,11 @@ const luckyDraw = async (req, res) => {
                         { upsert: true, new: true }
                     );
 
-                    eventResult[ticket.ticketNumber] = {
+                    eventResult.push({
+                        ticketNumber: ticket.ticketNumber,
                         userId: ticket.userId,
                         winningPrice: winningPrice["amount"]
-                    };
+                    });
                     ticketSelected.push(ticket.ticketNumber)
                     totalWinners++;
                 } else {
