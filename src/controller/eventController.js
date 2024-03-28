@@ -1,6 +1,7 @@
 const { eventModel, userWalletModel, transactionModel, UserRegistrationModel, eventResultModel, userModel } = require('../models');
 const { generateUniqueTicketNumber } = require('../../utils');
 const mongoose = require('mongoose');
+const moment = require('moment');
 
 const createEvent = async (req, res) => {
     const { time, maxRegistrations, entryPrice, name, status, winningPrices } = req.body;
@@ -85,17 +86,63 @@ const getEventByUserId = async (req, res) => {
         const { userId, myevent, page = 1, limit = 10 } = req.query;
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
-        const query = myevent ? { registeredUsers: { $in: [userId] } } : { registeredUsers: { $nin: [userId] } };
+        let matchQuery = {};
+        if (myevent) {
+            const todayStart = moment().startOf('day').add(12, 'hours').add(30, 'minutes');
+            const todayEnd = todayStart.clone().add(23, 'hours').add(59, 'minutes');
+            console.log("todayStart", todayStart)
+            console.log("todayEnd", todayEnd)
+            matchQuery = {
+                registeredUsers: { $in: [userId] },
+                time: {
+                    $gte: todayStart.toDate(),
+                    $lte: todayEnd.toDate()
+                }
+            };
 
-        const events = await eventModel.find(query)
-            .sort({ time: 1 })
-            .limit(parseInt(limit))
-            .skip(skip);
+        } else {
+            matchQuery = { registeredUsers: { $ne: new mongoose.Types.ObjectId(userId) }, time: { $gte: new Date() } };
+        }
 
-        const eventsWithCounts = await Promise.all(events.map(async (event) => {
-            const registeredUsersCount = await UserRegistrationModel.countDocuments({ eventId: event._id });
-            return { ...event.toObject(), registeredUsersCount };
-        }));
+        const events = await eventModel.aggregate([
+            { $match: matchQuery },
+            { $addFields: { registeredUsersCount: { $size: '$registeredUsers' } } },
+            { $sort: { time: 1 } },
+            { $skip: skip },
+            { $limit: parseInt(limit) },
+            {
+                $group: {
+                    _id: '$_id',
+                    time: { $first: '$time' },
+                    maxRegistrations: { $first: '$maxRegistrations' },
+                    entryPrice: { $first: '$entryPrice' },
+                    name: { $first: '$name' },
+                    status: { $first: '$status' },
+                    winningPrices: { $first: '$winningPrices' },
+                    registeredUsersCount: { $first: '$registeredUsersCount' },
+                }
+            }
+        ]);
+
+        const eventsWithCounts = events.map((event) => {
+            let totalWinningAmount = 0;
+            event.winningPrices.forEach(price => {
+                const priceValues = Object.entries(price)[0]; // Get the first (and only) entry in the price object
+                const winningPosition = priceValues[0]; // Winning position or range
+                const amount = priceValues[1]; // Winning amount
+
+                // Check if the winning position is a range
+                if (winningPosition.includes('-')) {
+                    const [start, end] = winningPosition.split('-').map(Number);
+                    const winnersInRange = end - start + 1;
+                    totalWinningAmount += winnersInRange * amount;
+                } else {
+                    totalWinningAmount += amount;
+                }
+            });
+
+            return { ...event, totalWinningAmount };
+        });
 
         return res.json({ success: true, data: eventsWithCounts });
     } catch (error) {
@@ -103,6 +150,11 @@ const getEventByUserId = async (req, res) => {
         return res.status(500).json({ success: false, error: error.message });
     }
 }
+
+
+
+
+
 
 const getEventById = async (req, res) => {
     try {
