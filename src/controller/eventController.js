@@ -61,7 +61,7 @@ const userRegistration = async (req, res) => {
         transactionModel.create({
             userId,
             amount: -entryFee,
-            type: 'withdraw',
+            type: 'Registration',
             note: note || 'Registered for event'
         });
 
@@ -273,7 +273,6 @@ const getEventById = async (req, res) => {
     }
 }
 
-
 const luckyDraw = async (req, res) => {
     try {
         const { eventId } = req.query;
@@ -335,6 +334,17 @@ const luckyDraw = async (req, res) => {
                 break; // Exit the loop if we've reached the required number of winners
             }
         }
+
+        // Create transactions in bulk
+        const transactions = eventResult.map(result => ({
+            userId: result.userId,
+            amount: result.winningPrice,
+            type: 'Deposit',
+            note: `Won ${result.winningPrice} in lucky draw for event ${event.name}`
+        }));
+
+        await transactionModel.insertMany(transactions);
+
         await eventResultModel.create({ eventId, result: eventResult });
 
         await eventModel.findByIdAndUpdate(eventId, { status: 'finished' });
@@ -345,6 +355,7 @@ const luckyDraw = async (req, res) => {
         return res.status(500).json({ success: false, error: error.message });
     }
 }
+
 
 module.exports = {
     createEvent, userRegistration, getEventByUserId, getEventById, luckyDraw

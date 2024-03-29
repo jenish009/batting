@@ -19,7 +19,7 @@ const eventSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['upcoming', 'finished'],
+        enum: ['upcoming', 'in progress', 'finished'],
         default: 'upcoming'
     },
     winningPrices: [{ type: Object }],
