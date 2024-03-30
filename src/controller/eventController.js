@@ -240,6 +240,28 @@ const getEventById = async (req, res) => {
             }
         ]);
 
+        const registeredUsers = await UserRegistrationModel.aggregate([
+            { $match: { eventId: new mongoose.Types.ObjectId(eventId) } },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'userId',
+                    foreignField: '_id',
+                    as: 'userDetails'
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    ticketNumber: 1,
+                    registrationDate: 1,
+                    name: { $arrayElemAt: ['$userDetails.name', 0] }
+                }
+            },
+            { $sort: { registrationDate: 1 } } // Sorting in ascending order of registrationDate
+
+        ])
+
         if (eventAggregate.length === 0) {
             return res.status(404).json({ error: 'Event not found' });
         }
@@ -264,7 +286,7 @@ const getEventById = async (req, res) => {
             }
         });
 
-        const response = { ...event, userTickets, winningPercentage, totalWinningAmount };
+        const response = { ...event, userTickets, winningPercentage, totalWinningAmount, registeredUsers };
 
         return res.json({ success: true, data: response });
     } catch (error) {
