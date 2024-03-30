@@ -13,7 +13,7 @@ const transactionSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['Deposit', 'Withdraw', "Registration"],
+        enum: ['Deposit', 'Withdraw', 'Registration'],
         required: true
     },
     note: {
@@ -24,6 +24,9 @@ const transactionSchema = new mongoose.Schema({
         default: Date.now
     }
 }, { versionKey: false });
+
+// Index definition
+transactionSchema.index({ userId: 1 }); // Index on userId for efficient querying based on user ID
 
 // Create model for transaction history
 const Transaction = mongoose.model('Transaction', transactionSchema);

@@ -12,6 +12,9 @@ const eventResultSchema = new mongoose.Schema({
     }
 }, { versionKey: false });
 
-const eventResult = mongoose.model('eventResult', eventResultSchema);
+// Index definition
+eventResultSchema.index({ eventId: 1 }); // Index on eventId for efficient querying based on event ID
 
-module.exports = eventResult;
+const EventResult = mongoose.model('EventResult', eventResultSchema);
+
+module.exports = EventResult;

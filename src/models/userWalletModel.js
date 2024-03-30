@@ -13,7 +13,8 @@ const userWalletSchema = new mongoose.Schema({
     }
 }, { versionKey: false });
 
-// Create model for user wallet
+userWalletSchema.index({ userId: 1 }); // Index on userId for efficient querying based on user ID
+
 const UserWallet = mongoose.model('UserWallet', userWalletSchema);
 
 module.exports = UserWallet;

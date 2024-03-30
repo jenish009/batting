@@ -35,6 +35,10 @@ const userSchema = new mongoose.Schema({
     }
 }, { versionKey: false });
 
+// Index definitions
+userSchema.index({ email: 1 }); // Index on email for efficient querying based on email address
+userSchema.index({ referralCode: 1 }); // Index on referralCode for efficient querying based on referral code
+
 // Hash password before saving
 userSchema.pre('save', async function (next) {
     try {
