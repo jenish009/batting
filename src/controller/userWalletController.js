@@ -189,6 +189,7 @@ const processAddMoneyRequest = async (req, res) => {
             const transaction = new transactionModel({
                 userId: addMoneyRequest.userId,
                 amount: addMoneyRequest.amount,
+                transactionId: addMoneyRequest.transactionId,
                 type: 'Deposit',
                 note: `Cash added successfully`,
             });
