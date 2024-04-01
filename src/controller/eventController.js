@@ -87,8 +87,7 @@ const getEventByUserId = async (req, res) => {
             matchQuery = {
                 registeredUsers: { $in: [new mongoose.Types.ObjectId(userId)] },
                 time: {
-                    $gte: todayIST,
-                    $lte: moment(todayIST).add(1, 'day').toDate()
+                    $gte: todayIST
                 }
             };
 
