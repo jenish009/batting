@@ -2,7 +2,7 @@ const { userModel, userWalletModel } = require('../models');
 
 const signup = async (req, res) => {
     try {
-        const { email, password, name, mobileNumber } = req.body;
+        const { email, password, name, mobileNumber, role } = req.body;
 
         if (!email || !validateEmail(email)) {
             throw new Error('Invalid email');
@@ -38,7 +38,8 @@ const signup = async (req, res) => {
             password,
             name,
             mobileNumber,
-            referralCode
+            referralCode,
+            role: role || 'user'
         });
 
         await newUser.save();

@@ -20,6 +20,11 @@ const userSchema = new mongoose.Schema({
             message: props => `${props.value} is not a valid email address!`
         }
     },
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user'
+    },
     password: {
         type: String,
         required: true,

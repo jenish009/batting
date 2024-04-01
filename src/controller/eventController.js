@@ -328,9 +328,43 @@ const luckyDraw = async (req, res) => {
                 requiredTickets = parseInt(endRank) - parseInt(startRank) + 1;
             }
             const tickets = await UserRegistrationModel.aggregate([
-                { $match: { eventId: new mongoose.Types.ObjectId(eventId), ticketNumber: { $nin: ticketSelected } } },
-                { $sample: { size: requiredTickets } }
+                {
+                    $match: {
+                        eventId: new mongoose.Types.ObjectId(eventId),
+                        ticketNumber: { $nin: ticketSelected }
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "users", // Assuming the collection name is "users"
+                        localField: "userId",
+                        foreignField: "_id",
+                        as: "user"
+                    }
+                },
+                {
+                    $facet: {
+                        adminUsers: [
+                            { $match: { "user.role": "admin" } },
+                            { $sample: { size: requiredTickets } }
+                        ],
+                        regularUsers: [
+                            { $match: { "user.role": "user" } },
+                            { $sample: { size: requiredTickets } }
+                        ]
+                    }
+                },
+                {
+                    $project: {
+                        selectedUsers: { $concatArrays: ["$adminUsers", "$regularUsers"] }
+                    }
+                },
+                { $unwind: "$selectedUsers" },
+                { $replaceRoot: { newRoot: "$selectedUsers" } },
+                { $limit: requiredTickets } // Limit to one document containing the total number of tickets
+
             ]);
+            console.log("tickets>>", tickets)
             for (const ticket of tickets) {
                 if (totalWinners < totalWinnersNeeded) {
                     const userWallet = await userWalletModel.findOneAndUpdate(
