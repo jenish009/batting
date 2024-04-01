@@ -50,7 +50,7 @@ const signup = async (req, res) => {
 
         await newUserWallet.save();
 
-        return res.status(201).json({ success: true, data: newUser });
+        return res.status(201).json({ success: true, data: { ...newUser.toObject(), compony_email: process.env.COMPONY_EMAIL } });
     } catch (error) {
         console.error('Error registering user:', error);
         res.status(500).json({ success: false, error: error.message });
@@ -117,7 +117,7 @@ const login = async (req, res) => {
             throw new Error('Invalid credentials');
         }
 
-        return res.status(200).json({ success: true, message: 'Login successful', data: user });
+        return res.status(200).json({ success: true, message: 'Login successful', data: { ...user.toObject(), compony_email: process.env.COMPONY_EMAIL } });
     } catch (error) {
         console.error('Error logging in user:', error);
         return res.status(500).json({ success: false, error: error.message });

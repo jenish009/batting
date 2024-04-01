@@ -58,13 +58,6 @@ const userRegistration = async (req, res) => {
         userWallet.balance -= entryFee;
         await userWallet.save();
 
-        transactionModel.create({
-            userId,
-            amount: -entryFee,
-            type: 'Registration',
-            note: note || 'Registered for event'
-        });
-
         new UserRegistrationModel({
             userId,
             eventId,
@@ -358,16 +351,6 @@ const luckyDraw = async (req, res) => {
                 break; // Exit the loop if we've reached the required number of winners
             }
         }
-
-        // Create transactions in bulk
-        const transactions = eventResult.map(result => ({
-            userId: result.userId,
-            amount: result.winningPrice,
-            type: 'Deposit',
-            note: `Won ${result.winningPrice} in lucky draw for event ${event.name}`
-        }));
-
-        await transactionModel.insertMany(transactions);
 
         await eventResultModel.create({ eventId, result: eventResult });
 
