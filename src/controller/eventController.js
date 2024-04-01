@@ -92,7 +92,12 @@ const getEventByUserId = async (req, res) => {
             };
 
         } else {
-            matchQuery = { time: { $gte: new Date() } };
+            matchQuery = {
+                registeredUsers: { $nin: [new mongoose.Types.ObjectId(userId)] },
+                time: {
+                    $gte: new Date()
+                }
+            };
         }
         const totalEventsCount = await eventModel.countDocuments(matchQuery); // Count total events
 
