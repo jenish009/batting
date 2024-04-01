@@ -1,4 +1,4 @@
-const { eventModel, userWalletModel, transactionModel, UserRegistrationModel, eventResultModel, userModel } = require('../models');
+const { eventModel, userWalletModel, UserRegistrationModel, eventResultModel, userModel } = require('../models');
 const { generateUniqueTicketNumber } = require('../../utils');
 const mongoose = require('mongoose');
 const moment = require('moment-timezone');
@@ -67,7 +67,7 @@ const userRegistration = async (req, res) => {
         event.registeredUsers.push(userId);
         event.save();
 
-        return res.status(200).json({ success: true, message: 'User registered successfully', ticketNumber });
+        return res.status(200).json({ success: true, message: 'User registered successfully', ticketNumber, walletBalance: userWallet.balance });
     } catch (error) {
         console.error('Error registering user:', error);
         return res.status(500).json({ success: false, error: error.message });
