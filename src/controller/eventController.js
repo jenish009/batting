@@ -285,7 +285,9 @@ const getEventById = async (req, res) => {
                 totalWinningAmount += amount;
             }
         });
-
+        if (registeredUsers.length == 0) {
+            event.eventResult = []
+        }
         const response = { ...event, userTickets, winningPercentage, totalWinningAmount, registeredUsers };
 
         return res.json({ success: true, data: response });
