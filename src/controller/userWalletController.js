@@ -50,7 +50,7 @@ const withdrawMoney = async (req, res) => {
 
 const approveOrRejectWithdrawalRequest = async (req, res) => {
     try {
-        const { requestId, action, rejectionReason } = req.body;
+        const { requestId, action, rejectionReason, transactionId } = req.body;
 
         // Find the withdrawal request by ID
         const withdrawalRequest = await withdrawalRequestModel.findById(requestId);
@@ -74,6 +74,7 @@ const approveOrRejectWithdrawalRequest = async (req, res) => {
             const transaction = new transactionModel({
                 userId: withdrawalRequest.userId,
                 amount: withdrawalRequest.amount,
+                transactionId: transactionId,
                 type: 'Withdraw',
                 note: 'Cash withdrawn successfully'
             });

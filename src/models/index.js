@@ -6,6 +6,7 @@ const userWalletModel = require("./userWalletModel");
 const eventResultModel = require("./eventResultModel");
 const withdrawalRequestModel = require("./withdrawalRequestModel");
 const addMoneyModel = require("./addMoneyModel");
+const gameHistories = require("./gameHistories");
 
 
 
@@ -14,4 +15,5 @@ const addMoneyModel = require("./addMoneyModel");
 
 
 
-module.exports = { eventModel, userModel, transactionModel, UserRegistrationModel, userWalletModel, eventResultModel, withdrawalRequestModel, addMoneyModel };
+
+module.exports = { eventModel, userModel, transactionModel, UserRegistrationModel, userWalletModel, eventResultModel, withdrawalRequestModel, addMoneyModel, gameHistories };

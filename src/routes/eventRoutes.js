@@ -8,6 +8,8 @@ router
     .get('/getEventByUserId', eventController.getEventByUserId)
     .get('/getEventById', eventController.getEventById)
     .post('/luckyDraw', eventController.luckyDraw)
+    .get('/gameHistory', eventController.gameHistory)
+
 
 
 

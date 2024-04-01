@@ -1,4 +1,4 @@
-const { eventModel, userWalletModel, UserRegistrationModel, eventResultModel, userModel } = require('../models');
+const { eventModel, userWalletModel, UserRegistrationModel, eventResultModel, userModel, gameHistories } = require('../models');
 const { generateUniqueTicketNumber } = require('../../utils');
 const mongoose = require('mongoose');
 const moment = require('moment-timezone');
@@ -312,13 +312,13 @@ const luckyDraw = async (req, res) => {
         if (existingResults) {
             return res.status(400).json({ error: 'Event results already exist for this event' });
         }
-
         const winningPrices = event.winningPrices;
         const totalWinnersNeeded = event.winningPrices[event.winningPrices.length - 1].rank.split("-")[1] || event.winningPrices[event.winningPrices.length - 1].rank.split("-")[0]
         const eventResult = [];
 
         let totalWinners = 0;
         let ticketSelected = []
+
         for (const winningPrice of winningPrices) {
             const priceKeys = winningPrice.rank
             const [startRank, endRank] = priceKeys.split('-');
@@ -356,6 +356,36 @@ const luckyDraw = async (req, res) => {
             }
         }
 
+        const registeredUser = await UserRegistrationModel.find({ eventId })
+        ticketNumber = registeredUser.map(obj => obj.ticketNumber)
+        const gameHistory = eventResult.map(result => {
+            const ticketIndex = ticketNumber.indexOf(result.ticketNumber);
+            if (ticketIndex !== -1) {
+                ticketNumber.splice(ticketIndex, 1); // Remove the ticketNumber from the array
+            }
+            return {
+                userId: result.userId,
+                eventId,
+                amount: result.winningPrice,
+                isWin: true,
+                ticketNumber: ticketIndex
+            }
+        });
+        registeredUser.map(obj => {
+            if (ticketNumber.includes(obj.ticketNumber)) {
+                gameHistory.push({
+                    userId: obj.userId,
+                    eventId,
+                    amount: event.entryPrice,
+                    isWin: false,
+                    ticketNumber: obj.ticketNumber
+                })
+            }
+        })
+
+        await gameHistories.insertMany(gameHistory)
+        console.log(gameHistory)
+
         await eventResultModel.create({ eventId, result: eventResult });
 
         await eventModel.findByIdAndUpdate(eventId, { status: 'finished' });
@@ -367,7 +397,48 @@ const luckyDraw = async (req, res) => {
     }
 }
 
+const gameHistory = async (req, res) => {
+    try {
+        const userId = req.query.userId;
+
+        const userGameHistory = await gameHistories.aggregate([
+            {
+                $match: { userId: new mongoose.Types.ObjectId(userId) }
+            },
+            {
+                $lookup: {
+                    from: 'events',
+                    localField: 'eventId',
+                    foreignField: '_id',
+                    as: 'eventData'
+                }
+            },
+            {
+                $addFields: {
+                    eventName: { $arrayElemAt: ["$eventData.name", 0] },
+                    eventTime: { $arrayElemAt: ["$eventData.time", 0] }
+                }
+            },
+            {
+                $project: {
+                    userId: 0,
+                    eventData: 0
+                }
+            },
+            {
+                $sort: { createdAt: -1 } // Sort by createdAt field in descending order (latest first)
+            },
+        ]);
+
+        res.json({ success: true, data: userGameHistory });
+    } catch (error) {
+        console.error('Error in lucky draw:', error);
+        return res.status(500).json({ success: false, error: error.message });
+    }
+}
+
+
 
 module.exports = {
-    createEvent, userRegistration, getEventByUserId, getEventById, luckyDraw
+    createEvent, userRegistration, getEventByUserId, getEventById, luckyDraw, gameHistory
 };
