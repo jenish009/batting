@@ -11,6 +11,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(cors());
 
+
 const { userRoutes, eventRoutes, userWalletRoutes } = require('./src/routes')
 app.use('/user', userRoutes);
 app.use('/event', eventRoutes);
