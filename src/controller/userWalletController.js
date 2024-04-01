@@ -75,7 +75,7 @@ const approveOrRejectWithdrawalRequest = async (req, res) => {
                 userId: withdrawalRequest.userId,
                 amount: withdrawalRequest.amount,
                 type: 'Withdraw',
-                note: 'Withdraw approved, deducted from wallet'
+                note: 'Cash withdrawn successfully'
             });
             await transaction.save();
         } else if (action === 'reject') {
@@ -190,7 +190,7 @@ const processAddMoneyRequest = async (req, res) => {
                 userId: addMoneyRequest.userId,
                 amount: addMoneyRequest.amount,
                 type: 'Deposit',
-                note: `Deposit for add money request ${addMoneyRequest._id}`,
+                note: `Cash added successfully`,
             });
             await transaction.save();
         }
