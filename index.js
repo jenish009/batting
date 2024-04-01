@@ -15,6 +15,18 @@ const { userRoutes, eventRoutes, userWalletRoutes } = require('./src/routes')
 app.use('/user', userRoutes);
 app.use('/event', eventRoutes);
 app.use('/wallet', userWalletRoutes);
+app.get('/app/getMetaData', (req, res) => {
+    try {
+        const response = {
+            appVersion: process.env.APP_VERSION,
+            appLink: process.env.APP_LINK
+        }
+        res.status(201).json({ success: true, data: response });
+    } catch (error) {
+        console.error('Error registering user:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 
 
 
