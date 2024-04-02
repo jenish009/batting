@@ -34,14 +34,17 @@ const withdrawMoney = async (req, res) => {
             throw new Error('Invalid amount. Minimum withdrawal amount is 100');
         }
 
-        // Create a new withdrawal request
+        const userWallet = await userWalletModel.findOne({ userId });
+        userWallet.balance -= amount;
+        await userWallet.save();
+
         const withdrawalRequest = new withdrawalRequestModel({
             userId: userId,
             amount: amount
         });
         await withdrawalRequest.save();
 
-        return res.json({ success: true, message: 'Withdrawal request submitted successfully' });
+        return res.json({ success: true, message: 'Withdrawal request submitted successfully', walletBalance: userWallet.balance });
     } catch (error) {
         console.error('Error withdrawing money:', error.message);
         return res.status(400).json({ success: false, error: error.message });
@@ -67,10 +70,6 @@ const approveOrRejectWithdrawalRequest = async (req, res) => {
             withdrawalRequest.status = 'completed';
             withdrawalRequest.completedAt = new Date();
 
-            const userWallet = await userWalletModel.findOne({ userId: withdrawalRequest.userId });
-            userWallet.balance -= withdrawalRequest.amount;
-            await userWallet.save();
-
             const transaction = new transactionModel({
                 userId: withdrawalRequest.userId,
                 amount: withdrawalRequest.amount,
@@ -82,6 +81,10 @@ const approveOrRejectWithdrawalRequest = async (req, res) => {
         } else if (action === 'reject') {
             withdrawalRequest.status = 'rejected';
             withdrawalRequest.rejectionReason = rejectionReason;
+
+            const userWallet = await userWalletModel.findOne({ userId: withdrawalRequest.userId });
+            userWallet.balance += withdrawalRequest.amount;
+            await userWallet.save();
         } else {
             return res.status(400).json({ error: 'Invalid action' });
         }
