@@ -40,6 +40,9 @@ const userRegistration = async (req, res) => {
         }
 
         const userWallet = await userWalletModel.findOne({ userId });
+        if (userWallet.balance < event.entryPrice) {
+            throw new Error("Insufficient balance")
+        }
         if (!userWallet) {
             return res.status(404).json({ error: 'User wallet not found' });
         }
@@ -51,7 +54,6 @@ const userRegistration = async (req, res) => {
 
         let remainingFee = entryFee;
 
-        // Deduct from addedBalance first
         if (userWallet.addedBalance >= remainingFee) {
             userWallet.addedBalance -= remainingFee;
             remainingFee = 0;
@@ -68,7 +70,6 @@ const userRegistration = async (req, res) => {
             userWallet.winningBalance = 0;
         }
 
-        // Deduct remaining fee from balance
         userWallet.balance -= entryFee;
 
         await userWallet.save();
