@@ -10,10 +10,18 @@ const userWalletSchema = new mongoose.Schema({
     balance: {
         type: Number,
         default: 0
+    },
+    winningBalance: {
+        type: Number,
+        default: 0
+    },
+    addedBalance: {
+        type: Number,
+        default: 0
     }
 }, { versionKey: false });
 
-userWalletSchema.index({ userId: 1 }); // Index on userId for efficient querying based on user ID
+userWalletSchema.index({ userId: 1 });
 
 const UserWallet = mongoose.model('UserWallet', userWalletSchema);
 

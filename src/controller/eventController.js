@@ -49,14 +49,33 @@ const userRegistration = async (req, res) => {
         if (event.maxRegistrations <= event.registeredUsers.length) {
             return res.status(400).json({ error: 'Event is full' });
         }
-        if (userWallet.balance < entryFee) {
-            return res.status(400).json({ error: 'Insufficient balance' });
+
+        let remainingFee = entryFee;
+
+        // Deduct from addedBalance first
+        if (userWallet.addedBalance >= remainingFee) {
+            userWallet.addedBalance -= remainingFee;
+            remainingFee = 0;
+        } else {
+            remainingFee -= userWallet.addedBalance;
+            userWallet.addedBalance = 0;
         }
 
-        const ticketNumber = await generateUniqueTicketNumber(event.name);
+        // Deduct from winningBalance if remainingFee still exists
+        if (remainingFee > 0 && userWallet.winningBalance >= remainingFee) {
+            userWallet.winningBalance -= remainingFee;
+            remainingFee = 0;
+        } else {
+            remainingFee -= userWallet.winningBalance;
+            userWallet.winningBalance = 0;
+        }
 
+        // Deduct remaining fee from balance
         userWallet.balance -= entryFee;
+
         await userWallet.save();
+
+        const ticketNumber = await generateUniqueTicketNumber(event.name);
 
         new UserRegistrationModel({
             userId,
@@ -65,14 +84,15 @@ const userRegistration = async (req, res) => {
         }).save();
 
         event.registeredUsers.push(userId);
-        event.save();
+        await event.save();
 
-        return res.status(200).json({ success: true, message: 'User registered successfully', ticketNumber, walletBalance: userWallet.balance });
+        return res.status(200).json({ success: true, message: 'User registered successfully', ticketNumber, walletBalance: userWallet.balance, winningBalance: userWallet.winningBalance, addedBalance: userWallet.addedBalance });
     } catch (error) {
         console.error('Error registering user:', error);
         return res.status(500).json({ success: false, error: error.message });
     }
 }
+
 
 const getEventByUserId = async (req, res) => {
     try {
@@ -369,8 +389,12 @@ const luckyDraw = async (req, res) => {
                 if (totalWinners < totalWinnersNeeded) {
                     const userWallet = await userWalletModel.findOneAndUpdate(
                         { userId: ticket.userId },
-                        { $inc: { balance: winningPrice["amount"] } },
-                        { upsert: true, new: true }
+                        {
+                            $inc: {
+                                balance: winningPrice["amount"],
+                                winningBalance: winningPrice["amount"]
+                            }
+                        }, { upsert: true, new: true }
                     );
 
                     eventResult.push({

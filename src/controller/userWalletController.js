@@ -35,7 +35,13 @@ const withdrawMoney = async (req, res) => {
         }
 
         const userWallet = await userWalletModel.findOne({ userId });
+
+        if (userWallet.winningBalance < amount) {
+            throw new Error('Insufficient winning balance')
+        }
         userWallet.balance -= amount;
+        userWallet.winningBalance -= amount;
+
         await userWallet.save();
 
         const withdrawalRequest = new withdrawalRequestModel({
@@ -44,7 +50,7 @@ const withdrawMoney = async (req, res) => {
         });
         await withdrawalRequest.save();
 
-        return res.json({ success: true, message: 'Withdrawal request submitted successfully', walletBalance: userWallet.balance });
+        return res.json({ success: true, message: 'Withdrawal request submitted successfully', walletBalance: userWallet.balance, walletBalance: userWallet.balance, winningBalance: userWallet.winningBalance, addedBalance: userWallet.addedBalance });
     } catch (error) {
         console.error('Error withdrawing money:', error.message);
         return res.status(400).json({ success: false, error: error.message });
@@ -84,6 +90,7 @@ const approveOrRejectWithdrawalRequest = async (req, res) => {
 
             const userWallet = await userWalletModel.findOne({ userId: withdrawalRequest.userId });
             userWallet.balance += withdrawalRequest.amount;
+            userWallet.winningBalance += withdrawalRequest.amount;
             await userWallet.save();
         } else {
             return res.status(400).json({ error: 'Invalid action' });
@@ -101,25 +108,20 @@ const approveOrRejectWithdrawalRequest = async (req, res) => {
 const getUserTransactionHistory = async (req, res) => {
     try {
         const { userId } = req.query;
-        const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
-        const limit = parseInt(req.query.limit) || 10; // Default to limit 10 if not provided
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
 
-        // Calculate the skip value based on the page and limit
         const skip = (page - 1) * limit;
 
-        // Fetch user's transaction history count from the database
         const totalCount = await transactionModel.countDocuments({ userId });
 
-        // Fetch user's transaction history with pagination from the database
         const transactions = await transactionModel.find({ userId })
             .sort({ timestamp: -1 })
             .skip(skip)
             .limit(limit);
 
-        // Calculate total page count
         const totalPages = Math.ceil(totalCount / limit);
 
-        // Return the transaction history and total page count in the response
         return res.json({ success: true, data: transactions, totalPages: totalPages });
     } catch (error) {
         console.error('Error fetching transaction history:', error);
@@ -202,6 +204,7 @@ const processAddMoneyRequest = async (req, res) => {
 
             // Update user's wallet balance
             userWallet.balance += addMoneyRequest.amount;
+            userWallet.addedBalance += addMoneyRequest.amount;
             await userWallet.save();
 
             // Add transaction history
