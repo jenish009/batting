@@ -148,7 +148,7 @@ const getEventByUserId = async (req, res) => {
         const eventsWithCounts = events.map((event) => {
             let totalWinningAmount = 0;
 
-            const maxWinningNumber = event.winningPrices[event.winningPrices.length - 1].rank.split('-')[1];
+            const maxWinningNumber = event.winningPrices[event.winningPrices.length - 1].rank.split('-')[1] || event.winningPrices[event.winningPrices.length - 1].rank.split('-')[0];
             const winningPercentage = (maxWinningNumber * 100) / event.maxRegistrations;
             event.winningPrices.forEach(obj => {
                 const winningPosition = obj.rank
