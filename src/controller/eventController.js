@@ -290,7 +290,7 @@ const getEventById = async (req, res) => {
         const userTickets = event.userRegistrationsTicket.map(registration => registration.ticketNumber);
         delete event.userRegistrationsTicket;
 
-        const maxWinningNumber = event.winningPrices[event.winningPrices.length - 1].rank.split('-')[1];
+        const maxWinningNumber = event.winningPrices[event.winningPrices.length - 1].rank.split('-')[1] || event.winningPrices[event.winningPrices.length - 1].rank.split('-')[0];
         const winningPercentage = (maxWinningNumber * 100) / event.maxRegistrations;
         let totalWinningAmount = 0;
         event.winningPrices.forEach(obj => {
