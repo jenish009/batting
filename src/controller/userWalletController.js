@@ -101,17 +101,32 @@ const approveOrRejectWithdrawalRequest = async (req, res) => {
 const getUserTransactionHistory = async (req, res) => {
     try {
         const { userId } = req.query;
+        const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
+        const limit = parseInt(req.query.limit) || 10; // Default to limit 10 if not provided
 
-        // Fetch user's transaction history from the database
-        const transactions = await transactionModel.find({ userId }).sort({ timestamp: -1 });
+        // Calculate the skip value based on the page and limit
+        const skip = (page - 1) * limit;
 
-        // Return the transaction history in the response
-        return res.json({ success: true, data: transactions });
+        // Fetch user's transaction history count from the database
+        const totalCount = await transactionModel.countDocuments({ userId });
+
+        // Fetch user's transaction history with pagination from the database
+        const transactions = await transactionModel.find({ userId })
+            .sort({ timestamp: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        // Calculate total page count
+        const totalPages = Math.ceil(totalCount / limit);
+
+        // Return the transaction history and total page count in the response
+        return res.json({ success: true, data: transactions, totalPages: totalPages });
     } catch (error) {
         console.error('Error fetching transaction history:', error);
         return res.status(500).json({ success: false, error: error.message });
     }
 }
+
 
 const submitAddMoneyRequest = async (req, res) => {
     try {

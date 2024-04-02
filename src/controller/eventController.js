@@ -434,6 +434,22 @@ const luckyDraw = async (req, res) => {
 const gameHistory = async (req, res) => {
     try {
         const userId = req.query.userId;
+        const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
+        const limit = parseInt(req.query.limit) || 10; // Default to limit 10 if not provided
+
+        // Calculate the skip value based on the page and limit
+        const skip = (page - 1) * limit;
+
+        const [totalDocsCount] = await gameHistories.aggregate([
+            {
+                $match: { userId: new mongoose.Types.ObjectId(userId) }
+            },
+            {
+                $count: "totalDocs"
+            }
+        ]);
+
+        const totalDocs = totalDocsCount ? totalDocsCount.totalDocs : 0;
 
         const userGameHistory = await gameHistories.aggregate([
             {
@@ -462,14 +478,24 @@ const gameHistory = async (req, res) => {
             {
                 $sort: { createdAt: -1 } // Sort by createdAt field in descending order (latest first)
             },
+            {
+                $skip: skip // Skip documents based on pagination
+            },
+            {
+                $limit: limit // Limit the number of documents returned per page
+            }
         ]);
 
-        res.json({ success: true, data: userGameHistory });
+        // Calculate total page count
+        const totalPages = Math.ceil(totalDocs / limit);
+
+        res.json({ success: true, data: userGameHistory, totalPages: totalPages });
     } catch (error) {
-        console.error('Error in lucky draw:', error);
+        console.error('Error in fetching game history:', error);
         return res.status(500).json({ success: false, error: error.message });
     }
-}
+};
+
 
 
 
