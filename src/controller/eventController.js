@@ -40,7 +40,6 @@ const userRegistration = async (req, res) => {
         }
 
         const userWallet = await userWalletModel.findOne({ userId });
-
         if (!userWallet) {
             return res.status(404).json({ error: 'User wallet not found' });
         }
@@ -61,11 +60,10 @@ const userRegistration = async (req, res) => {
             userWallet.addedBalance = 0;
         }
 
-        // Deduct from winningBalance if remainingFee still exists
         if (remainingFee > 0 && userWallet.winningBalance >= remainingFee) {
             userWallet.winningBalance -= remainingFee;
             remainingFee = 0;
-        } else {
+        } else if (remainingFee > 0) {
             remainingFee -= userWallet.winningBalance;
             userWallet.winningBalance = 0;
         }
