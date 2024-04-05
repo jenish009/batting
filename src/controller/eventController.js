@@ -34,7 +34,6 @@ const userRegistration = async (req, res) => {
 
     try {
         await authenticateUser(userId);
-        console.log(authentication)
         const event = await eventModel.findById(eventId);
 
         if (!event) {
