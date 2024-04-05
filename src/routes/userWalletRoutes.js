@@ -9,6 +9,8 @@ router
     .get('/getUserTransactionHistory', userWalletController.getUserTransactionHistory)
     .post('/submitAddMoneyRequest', userWalletController.submitAddMoneyRequest)
     .post('/processAddMoneyRequest', userWalletController.processAddMoneyRequest)
+    .get('/requestForQr', userWalletController.requestForQr)
+
 
 
 

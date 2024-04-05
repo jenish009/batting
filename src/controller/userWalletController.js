@@ -225,6 +225,24 @@ const processAddMoneyRequest = async (req, res) => {
     }
 }
 
+const requestForQr = (req, res) => {
+    try {
+        let { amount, userId } = req.query;
+
+        if (!amount || isNaN(parseFloat(amount))) {
+            return res.status(400).json({ success: false, error: "Invalid or missing 'amount' parameter." });
+        }
+
+        // Update the URL with the provided amount
+        let url = process.env.UPI_URL.replace("[AMOUNT]", amount) + userId;
+
+        return res.json({ success: true, url });
+
+    } catch (error) {
+        console.error('Error processing add money request:', error);
+        return res.status(500).json({ success: false, error: error.message });
+    }
+}
 
 
 module.exports = {
@@ -233,5 +251,6 @@ module.exports = {
     approveOrRejectWithdrawalRequest,
     getUserTransactionHistory,
     submitAddMoneyRequest,
-    processAddMoneyRequest
+    processAddMoneyRequest,
+    requestForQr
 };
