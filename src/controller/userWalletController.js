@@ -8,6 +8,7 @@ const mime = require("mime-types");
 const getUserWallet = async (req, res) => {
     try {
         const { userId } = req.query;
+        await authenticateUser(userId);
 
         // Find the user wallet based on the provided user ID
         const userWallet = await userWalletModel.findOne({ userId });
@@ -18,6 +19,9 @@ const getUserWallet = async (req, res) => {
 
         return res.json({ success: true, data: userWallet });
     } catch (error) {
+        if (error.message === "Unauthorized") {
+            return res.status(403).json({ success: false, error: 'Unauthorized' });
+        }
         console.error('Error fetching user wallet:', error);
         return res.status(500).json({ success: false, error: error.message });
     }
@@ -26,6 +30,7 @@ const getUserWallet = async (req, res) => {
 const withdrawMoney = async (req, res) => {
     try {
         const { userId, amount } = req.body;
+        await authenticateUser(userId);
 
         if (!userId) {
             throw new Error('User ID is required');
@@ -52,6 +57,9 @@ const withdrawMoney = async (req, res) => {
 
         return res.json({ success: true, message: 'Withdrawal request submitted successfully', walletBalance: userWallet.balance, walletBalance: userWallet.balance, winningBalance: userWallet.winningBalance, addedBalance: userWallet.addedBalance });
     } catch (error) {
+        if (error.message === "Unauthorized") {
+            return res.status(403).json({ success: false, error: 'Unauthorized' });
+        }
         console.error('Error withdrawing money:', error.message);
         return res.status(400).json({ success: false, error: error.message });
     }
@@ -108,6 +116,8 @@ const approveOrRejectWithdrawalRequest = async (req, res) => {
 const getUserTransactionHistory = async (req, res) => {
     try {
         const { userId } = req.query;
+        await authenticateUser(userId);
+
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
 
@@ -124,6 +134,9 @@ const getUserTransactionHistory = async (req, res) => {
 
         return res.json({ success: true, data: transactions, totalPages: totalPages });
     } catch (error) {
+        if (error.message === "Unauthorized") {
+            return res.status(403).json({ success: false, error: 'Unauthorized' });
+        }
         console.error('Error fetching transaction history:', error);
         return res.status(500).json({ success: false, error: error.message });
     }
@@ -141,7 +154,7 @@ const submitAddMoneyRequest = async (req, res) => {
                 const imageBuffer = req.file.buffer;
                 const { userId, transactionId, amount } = req.body;
 
-                // Construct filename dynamically
+                await authenticateUser(userId);
                 const fileExtension = req.file.originalname.split(".").pop();
                 const filename = `payment_screenshot_${Date.now()}.${fileExtension}`;
 
@@ -163,12 +176,18 @@ const submitAddMoneyRequest = async (req, res) => {
                 return res.json({ success: true, message: "Add money request submitted successfully", data: addMoneyRequest });
             }
             catch (error) {
+                if (error.message === "Unauthorized") {
+                    return res.status(403).json({ success: false, error: 'Unauthorized' });
+                }
                 console.error("Error submitting add money request:", error);
                 return res.status(500).json({ success: false, error: error.message });
             }
         });
 
     } catch (error) {
+        if (error.message === "Unauthorized") {
+            return res.status(403).json({ success: false, error: 'Unauthorized' });
+        }
         console.error("Error submitting add money request:", error);
         return res.status(500).json({ success: false, error: error.message });
     }
@@ -225,9 +244,10 @@ const processAddMoneyRequest = async (req, res) => {
     }
 }
 
-const requestForQr = (req, res) => {
+const requestForQr = async (req, res) => {
     try {
         let { amount, userId } = req.query;
+        await authenticateUser(userId);
 
         if (!amount || isNaN(parseFloat(amount))) {
             return res.status(400).json({ success: false, error: "Invalid or missing 'amount' parameter." });
@@ -239,6 +259,9 @@ const requestForQr = (req, res) => {
         return res.json({ success: true, url });
 
     } catch (error) {
+        if (error.message === "Unauthorized") {
+            return res.status(403).json({ success: false, error: 'Unauthorized' });
+        }
         console.error('Error processing add money request:', error);
         return res.status(500).json({ success: false, error: error.message });
     }

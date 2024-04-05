@@ -1,5 +1,5 @@
 const { eventModel, userWalletModel, UserRegistrationModel, eventResultModel, userModel, gameHistories } = require('../models');
-const { generateUniqueTicketNumber } = require('../../utils');
+const { generateUniqueTicketNumber, authenticateUser } = require('../../utils');
 const mongoose = require('mongoose');
 const moment = require('moment-timezone');
 
@@ -33,6 +33,8 @@ const userRegistration = async (req, res) => {
     const { userId, eventId, note } = req.body;
 
     try {
+        await authenticateUser(userId);
+        console.log(authentication)
         const event = await eventModel.findById(eventId);
 
         if (!event) {
@@ -87,6 +89,9 @@ const userRegistration = async (req, res) => {
 
         return res.status(200).json({ success: true, message: 'User registered successfully', ticketNumber, walletBalance: userWallet.balance, winningBalance: userWallet.winningBalance, addedBalance: userWallet.addedBalance });
     } catch (error) {
+        if (error.message === "Unauthorized") {
+            return res.status(403).json({ success: false, error: 'Unauthorized' });
+        }
         console.error('Error registering user:', error);
         return res.status(500).json({ success: false, error: error.message });
     }
@@ -96,6 +101,8 @@ const userRegistration = async (req, res) => {
 const getEventByUserId = async (req, res) => {
     try {
         const { userId, myevent, page = 1, limit = 10 } = req.query;
+        await authenticateUser(userId);
+
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
         let matchQuery = {};
@@ -168,6 +175,9 @@ const getEventByUserId = async (req, res) => {
 
         return res.json({ success: true, data: eventsWithCounts, totalPages });
     } catch (error) {
+        if (error.message === "Unauthorized") {
+            return res.status(403).json({ success: false, error: 'Unauthorized' });
+        }
         console.error('Error fetching events:', error);
         return res.status(500).json({ success: false, error: error.message });
     }
@@ -176,6 +186,7 @@ const getEventByUserId = async (req, res) => {
 const getEventById = async (req, res) => {
     try {
         const { userId, eventId } = req.query;
+        await authenticateUser(userId);
 
         const eventAggregate = await eventModel.aggregate([
             { $match: { _id: new mongoose.Types.ObjectId(eventId) } },
@@ -312,6 +323,9 @@ const getEventById = async (req, res) => {
 
         return res.json({ success: true, data: response });
     } catch (error) {
+        if (error.message === "Unauthorized") {
+            return res.status(403).json({ success: false, error: 'Unauthorized' });
+        }
         console.error('Error fetching events:', error);
         return res.status(500).json({ success: false, error: error.message });
     }
@@ -463,6 +477,7 @@ const gameHistory = async (req, res) => {
         const userId = req.query.userId;
         const page = parseInt(req.query.page) || 1; // Default to page 1 if not provided
         const limit = parseInt(req.query.limit) || 10; // Default to limit 10 if not provided
+        await authenticateUser(userId);
 
         // Calculate the skip value based on the page and limit
         const skip = (page - 1) * limit;
@@ -518,6 +533,9 @@ const gameHistory = async (req, res) => {
 
         res.json({ success: true, data: userGameHistory, totalPages: totalPages });
     } catch (error) {
+        if (error.message === "Unauthorized") {
+            return res.status(403).json({ success: false, error: 'Unauthorized' });
+        }
         console.error('Error in fetching game history:', error);
         return res.status(500).json({ success: false, error: error.message });
     }

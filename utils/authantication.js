@@ -5,15 +5,14 @@ const authenticateUser = async (_id) => {
         const user = await userModel.findOne({ _id });
 
         if (!user) {
-            res.status(403).json({ error: 'Invalid email or password' });
+            const error = new Error("Unauthorized");
+            error.statusCode = 403; // Set the status code to 403
+            throw error;
         }
     } catch (error) {
-        console.error('Error authenticating user:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        throw new Error("Unauthorized");
     }
 };
-
-
 
 module.exports = {
     authenticateUser

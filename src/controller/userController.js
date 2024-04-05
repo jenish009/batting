@@ -128,6 +128,7 @@ const login = async (req, res) => {
 const updateProfile = async (req, res) => {
     try {
         const { name, mobileNumber, userId } = req.body;
+        await authenticateUser(userId);
 
         // Validate request body
         if (!name || !mobileNumber) {
@@ -146,6 +147,9 @@ const updateProfile = async (req, res) => {
 
         return res.json({ success: true, message: 'User details updated successfully', user: updatedUser });
     } catch (error) {
+        if (error.message === "Unauthorized") {
+            return res.status(403).json({ success: false, error: 'Unauthorized' });
+        }
         console.error('Error updating user details:', error);
         return res.status(500).json({ success: false, error: error.message });
     }
