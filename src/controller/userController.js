@@ -1,4 +1,5 @@
 const { userModel, userWalletModel } = require('../models');
+const { authenticateUser } = require('../../utils');
 
 const signup = async (req, res) => {
     try {

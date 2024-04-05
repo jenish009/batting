@@ -1,8 +1,9 @@
 const { userWalletModel, transactionModel, withdrawalRequestModel, addMoneyModel } = require('../models');
+
 const multer = require("multer");
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
-const { uploadImageToDrive } = require('../../utils');
+const { uploadImageToDrive, authenticateUser } = require('../../utils');
 const mime = require("mime-types");
 
 const getUserWallet = async (req, res) => {
