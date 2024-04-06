@@ -258,7 +258,7 @@ const requestForQr = async (req, res) => {
         amount = parseFloat(amount).toFixed(2);
 
         // Update the URL with the provided amount
-        let url = `upi://pay?pa=groundbloggers@okicici&pn=Bloggers%20Ground&am=${amount}&cu=INR&aid=${userId}`;
+        let url = `upi://pay?pa=groundbloggers@okicici&pn=Bloggers%20Ground&am=${amount}&cu=INR`;
 
         return res.json({ success: true, url });
 
