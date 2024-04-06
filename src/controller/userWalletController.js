@@ -254,8 +254,11 @@ const requestForQr = async (req, res) => {
             return res.status(400).json({ success: false, error: "Invalid or missing 'amount' parameter." });
         }
 
+        // Format the amount to have two decimal places
+        amount = parseFloat(amount).toFixed(2);
+
         // Update the URL with the provided amount
-        let url = process.env.UPI_URL.replace("[AMOUNT]", amount) + userId;
+        let url = `upi://pay?pa=groundbloggers@okicici&pn=Bloggers%20Ground&am=${amount}&cu=INR&aid=${userId}`;
 
         return res.json({ success: true, url });
 
@@ -267,6 +270,8 @@ const requestForQr = async (req, res) => {
         return res.status(500).json({ success: false, error: error.message });
     }
 }
+
+
 
 
 module.exports = {
