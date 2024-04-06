@@ -464,10 +464,16 @@ const luckyDraw = async (req, res) => {
 
         await eventModel.findByIdAndUpdate(eventId, { status: 'finished' });
 
-        return res.json({ success: true, message: 'Lucky draw completed successfully' });
+        if (res) {
+            return res.json({ success: true, message: 'Lucky draw completed successfully' });
+        }
     } catch (error) {
         console.error('Error in lucky draw:', error);
-        return res.status(500).json({ success: false, error: error.message });
+
+        if (res) {
+
+            return res.status(500).json({ success: false, error: error.message });
+        }
     }
 }
 

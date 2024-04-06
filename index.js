@@ -3,14 +3,15 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 require("dotenv").config();
 require('./src/config');
+const cron = require('node-cron');
+const { eventController } = require('./src/controller');
+const { eventModel } = require('./src/models');
 
 const app = express();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
 app.use(cors());
-
 
 const { userRoutes, eventRoutes, userWalletRoutes } = require('./src/routes')
 app.use('/user', userRoutes);
@@ -29,7 +30,23 @@ app.get('/app/getMetaData', (req, res) => {
     }
 });
 
+// Define and start the cron job
+cron.schedule('0 */5 * * * *', async () => {
+    try {
+        const currentTime = new Date();
+        console.log(currentTime)
+        const events = await eventModel.find({
+            time: { $lte: currentTime },
+            status: { $ne: 'finished' }
+        });
 
+        for (const event of events) {
+            await eventController.luckyDraw({ query: { eventId: event._id } }, null); // Pass eventId to luckyDraw function
+        }
+    } catch (error) {
+        console.error('Error in cron job:', error);
+    }
+});
 
 // Start the server
 const PORT = process.env.PORT || 3000;
