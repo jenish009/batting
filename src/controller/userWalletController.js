@@ -34,17 +34,23 @@ const withdrawMoney = async (req, res) => {
         await authenticateUser(userId);
 
         if (!userId) {
-            throw new Error('User ID is required');
+            throw new Error('User ID is required. Please provide your user ID.');
         }
+
         if (!amount || isNaN(amount) || amount < 100) {
-            throw new Error('Invalid amount. Minimum withdrawal amount is 100');
+            throw new Error('Invalid amount. Minimum withdrawal amount is 100. Please enter a valid amount.');
         }
 
         const userWallet = await userWalletModel.findOne({ userId });
 
-        if (userWallet.winningBalance < amount) {
-            throw new Error('Insufficient winning balance')
+        if (!userWallet) {
+            throw new Error('User wallet not found. Please contact support.');
         }
+
+        if (userWallet.winningBalance < amount) {
+            throw new Error('Insufficient winning balance. Please make sure you have enough winning balance for withdrawal.');
+        }
+
         userWallet.balance -= amount;
         userWallet.winningBalance -= amount;
 
@@ -56,13 +62,13 @@ const withdrawMoney = async (req, res) => {
         });
         await withdrawalRequest.save();
 
-        return res.json({ success: true, message: 'Withdrawal request submitted successfully', walletBalance: userWallet.balance, walletBalance: userWallet.balance, winningBalance: userWallet.winningBalance, addedBalance: userWallet.addedBalance });
+        return res.json({ success: true, message: 'Withdrawal request submitted successfully', walletBalance: userWallet.balance, winningBalance: userWallet.winningBalance, addedBalance: userWallet.addedBalance });
     } catch (error) {
         if (error.message === "Unauthorized") {
-            return res.status(403).json({ success: false, error: 'Unauthorized' });
+            return res.status(403).json({ success: false, error: 'Unauthorized access. Please login again.' });
         }
         console.error('Error withdrawing money:', error.message);
-        return res.status(400).json({ success: false, error: error.message });
+        return res.status(400).json({ success: false, error: 'Failed to withdraw money. ' + error.message });
     }
 }
 
@@ -133,22 +139,21 @@ const getUserTransactionHistory = async (req, res) => {
 
         const totalPages = Math.ceil(totalCount / limit);
 
-        return res.json({ success: true, data: transactions, totalPages: totalPages });
+        return res.json({ success: true, message: 'Transaction history retrieved successfully', data: transactions, totalPages: totalPages });
     } catch (error) {
         if (error.message === "Unauthorized") {
-            return res.status(403).json({ success: false, error: 'Unauthorized' });
+            return res.status(403).json({ success: false, error: 'Unauthorized access. Please login again.' });
         }
         console.error('Error fetching transaction history:', error);
-        return res.status(500).json({ success: false, error: error.message });
+        return res.status(500).json({ success: false, error: 'Failed to fetch transaction history. ' + error.message });
     }
 }
-
 
 const submitAddMoneyRequest = async (req, res) => {
     try {
         upload.single("paymentScreenshot")(req, res, async (err) => {
             if (err) {
-                return res.status(400).json({ error: "File upload failed" });
+                return res.status(400).json({ error: "File upload failed. Please try again." });
             }
 
             try {
@@ -157,14 +162,20 @@ const submitAddMoneyRequest = async (req, res) => {
 
                 await authenticateUser(userId);
                 const fileExtension = req.file.originalname.split(".").pop();
-                const filename = `payment_screenshot_${Date.now()}.${fileExtension}`;
+                const filename = `paymentScreenshot_${Date.now()}.${fileExtension}`;
 
                 // Determine MIME type based on file extension
-                const mimetype = mime.lookup(fileExtension) || "image/png";
+                const mimeType = mime.lookup(fileExtension) || "image/png";
 
-                let imageLink = await uploadImageToDrive(imageBuffer, filename, mimetype)
+                let imageLink = await uploadImageToDrive(imageBuffer, filename, mimeType)
                 if (!imageLink) {
-                    return res.status(400).json({ success: false, error: "Payment screenshot is required" });
+                    return res.status(400).json({ success: false, error: "Payment screenshot is required. Please upload a valid image." });
+                }
+
+                // Check if transactionId is already used
+                const existingRequest = await addMoneyModel.findOne({ transactionId });
+                if (existingRequest) {
+                    return res.status(400).json({ success: false, error: "Transaction ID already exists. Please use a different ID." });
                 }
 
                 const addMoneyRequest = await addMoneyModel.create({
@@ -174,60 +185,54 @@ const submitAddMoneyRequest = async (req, res) => {
                     amount
                 });
 
-                return res.json({ success: true, message: "Add money request submitted successfully", data: addMoneyRequest });
+                return res.json({ success: true, message: "Money request submitted successfully", data: addMoneyRequest });
             }
             catch (error) {
                 if (error.message === "Unauthorized") {
-                    return res.status(403).json({ success: false, error: 'Unauthorized' });
+                    return res.status(403).json({ success: false, error: 'Unauthorized access. Please login again.' });
                 }
                 console.error("Error submitting add money request:", error);
-                return res.status(500).json({ success: false, error: error.message });
+                return res.status(500).json({ success: false, error: 'Failed to submit money request. ' + error.message });
             }
         });
 
     } catch (error) {
         if (error.message === "Unauthorized") {
-            return res.status(403).json({ success: false, error: 'Unauthorized' });
+            return res.status(403).json({ success: false, error: 'Unauthorized access. Please login again.' });
         }
         console.error("Error submitting add money request:", error);
-        return res.status(500).json({ success: false, error: error.message });
+        return res.status(500).json({ success: false, error: 'Failed to submit money request. ' + error.message });
     }
 };
+
 
 const processAddMoneyRequest = async (req, res) => {
     try {
         const { requestId, status } = req.body;
 
-        // Find the add money request by ID
         const addMoneyRequest = await addMoneyModel.findById(requestId);
 
         if (!addMoneyRequest) {
             return res.status(404).json({ success: false, error: 'Add money request not found' });
         }
 
-        // Check if the add money request has already been accepted
         if (addMoneyRequest.status === 'accepted') {
             return res.status(400).json({ success: false, error: 'Add money request already accepted' });
         }
 
-        // Update the status of the add money request
         addMoneyRequest.status = status;
         await addMoneyRequest.save();
 
-        // If the status is 'accepted', credit the amount to the user's wallet and add transaction history
         if (status === 'accepted') {
-            // Find user's wallet
             const userWallet = await userWalletModel.findOne({ userId: addMoneyRequest.userId });
             if (!userWallet) {
                 return res.status(404).json({ success: false, error: 'User wallet not found' });
             }
 
-            // Update user's wallet balance
             userWallet.balance += addMoneyRequest.amount;
             userWallet.addedBalance += addMoneyRequest.amount;
             await userWallet.save();
 
-            // Add transaction history
             const transaction = new transactionModel({
                 userId: addMoneyRequest.userId,
                 amount: addMoneyRequest.amount,

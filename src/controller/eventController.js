@@ -37,20 +37,21 @@ const userRegistration = async (req, res) => {
         const event = await eventModel.findById(eventId);
 
         if (!event) {
-            return res.status(404).json({ error: 'Event not found' });
+            return res.status(404).json({ error: 'Event not found. Please select a valid event.' });
         }
 
         const userWallet = await userWalletModel.findOne({ userId });
-        if (userWallet.balance < event.entryPrice) {
-            throw new Error("Insufficient balance")
-        }
         if (!userWallet) {
-            return res.status(404).json({ error: 'User wallet not found' });
+            return res.status(404).json({ error: 'User wallet not found. Please contact support.' });
+        }
+
+        if (userWallet.balance < event.entryPrice) {
+            throw new Error("Insufficient balance. Please add funds to your wallet.");
         }
 
         const entryFee = event.entryPrice;
         if (event.maxRegistrations <= event.registeredUsers.length) {
-            return res.status(400).json({ error: 'Event is full' });
+            return res.status(400).json({ error: 'Event is full. Please try another event.' });
         }
 
         let remainingFee = entryFee;
@@ -86,16 +87,15 @@ const userRegistration = async (req, res) => {
         event.registeredUsers.push(userId);
         await event.save();
 
-        return res.status(200).json({ success: true, message: 'User registered successfully', ticketNumber, walletBalance: userWallet.balance, winningBalance: userWallet.winningBalance, addedBalance: userWallet.addedBalance });
+        return res.status(200).json({ success: true, message: 'You have successfully registered for the event.', ticketNumber, walletBalance: userWallet.balance, winningBalance: userWallet.winningBalance, addedBalance: userWallet.addedBalance });
     } catch (error) {
         if (error.message === "Unauthorized") {
-            return res.status(403).json({ success: false, error: 'Unauthorized' });
+            return res.status(403).json({ success: false, error: 'Unauthorized access. Please login again.' });
         }
         console.error('Error registering user:', error);
-        return res.status(500).json({ success: false, error: error.message });
+        return res.status(500).json({ success: false, error: 'Internal server error. Please try again later.' });
     }
 }
-
 
 const getEventByUserId = async (req, res) => {
     try {
