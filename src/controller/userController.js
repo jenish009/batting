@@ -1,39 +1,54 @@
-const { userModel, userWalletModel } = require('../models');
+const { userModel, userWalletModel, addMoneyModel } = require('../models');
 const { authenticateUser } = require('../../utils');
 
 const signup = async (req, res) => {
     try {
-        const { email, password, name, mobileNumber, role } = req.body;
+        const { email, password, name, mobileNumber, role, referUserCode } = req.body;
 
+        // Validation checks for email, password, name, and mobile number
         if (!email || !validateEmail(email)) {
             throw new Error('Invalid email. Please provide a valid email address.');
         }
-
         if (!password || !validatePassword(password)) {
             throw new Error('Invalid password. Password must be at least 8 characters long.');
         }
-
         if (!name) {
             throw new Error('Name is required. Please provide your name.');
         }
-
         if (!mobileNumber || !validateMobileNumber(mobileNumber)) {
             throw new Error('Invalid mobile number. Please provide a valid mobile number.');
         }
 
+        // Check if email or mobile number already exists
         const existingUserByEmail = await userModel.findOne({ email });
-
         if (existingUserByEmail) {
             throw new Error('Email already exists. Please use a different email address.');
         }
-
         const existingUserByMobileNumber = await userModel.findOne({ mobileNumber });
-
         if (existingUserByMobileNumber) {
             throw new Error('Mobile number already exists. Please use a different mobile number.');
         }
 
+        // If referUserCode is provided, find the user with that referral code
+        let referredUser = null;
+        if (referUserCode) {
+            referredUser = await userModel.findOne({ referralCode: referUserCode });
+            if (referredUser) {
+                // If referred user is found, add ₹25 as pending balance to their wallet
+                const addMoneyRequest = new addMoneyModel({
+                    userId: referredUser._id,
+                    amount: 25,
+                    type: 'refer',
+                    status: 'pending'
+                });
+                await addMoneyRequest.save();
+            }
+        }
+
+        // Generate referral code for the new user
         const referralCode = await generateReferralCode(name);
+
+        // Create a new user document
         const newUser = new userModel({
             email,
             password,
@@ -42,22 +57,25 @@ const signup = async (req, res) => {
             referralCode,
             role: role || 'user'
         });
-
         await newUser.save();
 
+        // Create a wallet for the new user
         const newUserWallet = new userWalletModel({
             userId: newUser._id,
             balance: 0
         });
-
         await newUserWallet.save();
 
+        // Return success response
         return res.status(201).json({ success: true, data: { ...newUser.toObject(), companyEmail: process.env.COMPANY_EMAIL } });
     } catch (error) {
         console.error('Error registering user:', error);
         res.status(500).json({ success: false, error: 'Registration failed. ' + error.message });
     }
 }
+
+module.exports = signup;
+
 
 
 // Function to generate a unique referral code

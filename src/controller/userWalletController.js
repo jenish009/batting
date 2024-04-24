@@ -238,7 +238,7 @@ const processAddMoneyRequest = async (req, res) => {
                 amount: addMoneyRequest.amount,
                 transactionId: addMoneyRequest.transactionId,
                 type: 'Deposit',
-                note: `Cash added successfully`,
+                note: addMoneyRequest.type === 'refer' ? `Referral bonus added successfully` : `Cash added successfully`,
             });
             await transaction.save();
         }
@@ -249,6 +249,7 @@ const processAddMoneyRequest = async (req, res) => {
         return res.status(500).json({ success: false, error: error.message });
     }
 }
+
 
 const requestForQr = async (req, res) => {
     try {
@@ -265,7 +266,7 @@ const requestForQr = async (req, res) => {
         // Update the URL with the provided amount
         let url = `upi://pay?pa=groundbloggers@okicici&pn=Bloggers%20Ground&am=${amount}&cu=INR`;
 
-        return res.json({ success: true, url });
+        return res.json({ success: true, url, upiId: process.env.UPI_ID });
 
     } catch (error) {
         if (error.message === "Unauthorized") {

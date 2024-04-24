@@ -8,11 +8,9 @@ const addMoneySchema = new mongoose.Schema({
     },
     transactionId: {
         type: String,
-        required: true
     },
     paymentScreenshot: {
         type: String,
-        required: true
     },
     amount: {
         type: Number,
@@ -26,6 +24,10 @@ const addMoneySchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    type: {
+        type: String,
+        enum: ['deposite', 'refer']
     }
 }, { versionKey: false });
 

@@ -13,10 +13,12 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 
-const { userRoutes, eventRoutes, userWalletRoutes } = require('./src/routes')
+const { userRoutes, eventRoutes, userWalletRoutes, referRoutes } = require('./src/routes')
 app.use('/user', userRoutes);
 app.use('/event', eventRoutes);
 app.use('/wallet', userWalletRoutes);
+app.use('/refer', referRoutes);
+
 app.get('/app/getMetaData', (req, res) => {
     try {
         const response = {
