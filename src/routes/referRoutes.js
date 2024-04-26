@@ -5,13 +5,4 @@ const { referController } = require('../controller')
 router
     .get('/getReferralPage', referController.getReferralPage)
 
-
-
-
-
-
-
-
-
-
 module.exports = router;
