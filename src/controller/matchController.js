@@ -284,8 +284,8 @@ const getMatchById = async (req, res) => {
             }
         ]);
 
-        const userTeams = await UserRegistrationModel.aggregate([
-            { $match: { eventId: new mongoose.Types.ObjectId(matchId), userId: new mongoose.Types.ObjectId(userId) } },
+        let userTeams = await UserRegistrationModel.aggregate([
+            { $match: { eventId: new mongoose.Types.ObjectId(matchId) } },
             {
                 $lookup: {
                     from: 'players',
@@ -389,13 +389,13 @@ const getMatchById = async (req, res) => {
                     "playerDetails": 0,
                     "positionDetails": 0,
                     "eventId": 0,
-                    "userId": 0
                 }
             }
         ]);
 
 
 
+        userTeams = userTeams.map((team, index) => ({ ...team, rank: index + 1 })).filter((team, index) => team.userId == userId);
 
         if (matchAggregate.length === 0) {
             return res.status(404).json({ error: 'Event not found' });
