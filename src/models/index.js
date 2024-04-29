@@ -12,6 +12,8 @@ const playerModel = require("./playerModel");
 const matchModel = require("./matchModel");
 const positionModel = require("./positionModel");
 const gameCategoryModel = require("./gameCategoryModel");
+const refereAndEarnModel = require("./refereAndEarnModel");
+
 
 
 
@@ -30,5 +32,6 @@ module.exports = {
     playerModel,
     matchModel,
     positionModel,
-    gameCategoryModel
+    gameCategoryModel,
+    refereAndEarnModel
 };
