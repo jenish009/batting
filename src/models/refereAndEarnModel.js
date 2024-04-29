@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 // Define the schema for the player list
 const refereAndEarnSchema = new mongoose.Schema({
-    data: {
+    offer: {
         type: [String],
         required: true
     },
