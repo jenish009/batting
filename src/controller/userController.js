@@ -29,12 +29,10 @@ const signup = async (req, res) => {
             throw new Error('Mobile number already exists. Please use a different mobile number.');
         }
 
-        // If referUserCode is provided, find the user with that referral code
         let referredUser = null;
         if (referUserCode) {
             referredUser = await userModel.findOne({ referralCode: referUserCode });
             if (referredUser) {
-                // If referred user is found, add ₹25 as pending balance to their wallet
                 const addMoneyRequest = new addMoneyModel({
                     userId: referredUser._id,
                     amount: 25,
@@ -55,18 +53,17 @@ const signup = async (req, res) => {
             name,
             mobileNumber,
             referralCode,
-            role: role || 'user'
+            role: role || 'user',
+            referedCode: referUserCode
         });
         await newUser.save();
 
-        // Create a wallet for the new user
         const newUserWallet = new userWalletModel({
             userId: newUser._id,
             balance: 0
         });
         await newUserWallet.save();
 
-        // Return success response
         return res.status(201).json({ success: true, data: { ...newUser.toObject(), companyEmail: process.env.COMPANY_EMAIL } });
     } catch (error) {
         console.error('Error registering user:', error);
@@ -78,14 +75,12 @@ module.exports = signup;
 
 
 
-// Function to generate a unique referral code
 const generateReferralCode = async (name) => {
     try {
 
         let referralCode;
         let existingUserByReferralCode
         do {
-            // Generate a random string
             const randomString = Math.random().toString(36).substr(2, 5);
             // Concatenate the first three characters of the name with the random string
             referralCode = name.substring(0, 3).toUpperCase() + randomString;
