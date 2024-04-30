@@ -3,7 +3,7 @@ const { authenticateUser } = require('../../utils');
 
 const signup = async (req, res) => {
     try {
-        const { email, password, name, mobileNumber, role, referUserCode } = req.body;
+        const { email, password, name, mobileNumber, role, referenceCode } = req.body;
 
         console.log("req.body>>", req.body)
         if (!email || !validateEmail(email)) {
@@ -30,8 +30,8 @@ const signup = async (req, res) => {
         }
 
         let referredUser = null;
-        if (referUserCode) {
-            referredUser = await userModel.findOne({ referralCode: referUserCode });
+        if (referenceCode) {
+            referredUser = await userModel.findOne({ referralCode: referenceCode });
             if (referredUser) {
                 const addMoneyRequest = new addMoneyModel({
                     userId: referredUser._id,
@@ -54,7 +54,7 @@ const signup = async (req, res) => {
             mobileNumber,
             referralCode,
             role: role || 'user',
-            referedCode: referUserCode
+            referedCode: referenceCode
         });
         await newUser.save();
 
