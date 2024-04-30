@@ -5,7 +5,7 @@ const signup = async (req, res) => {
     try {
         const { email, password, name, mobileNumber, role, referUserCode } = req.body;
 
-        // Validation checks for email, password, name, and mobile number
+        console.log("req.body>>", req.body)
         if (!email || !validateEmail(email)) {
             throw new Error('Invalid email. Please provide a valid email address.');
         }
