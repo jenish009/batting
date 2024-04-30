@@ -28,6 +28,10 @@ const addMoneySchema = new mongoose.Schema({
     type: {
         type: String,
         enum: ['deposite', 'refer']
+    },
+    refereUser: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     }
 }, { versionKey: false });
 

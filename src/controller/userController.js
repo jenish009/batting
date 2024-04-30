@@ -29,24 +29,8 @@ const signup = async (req, res) => {
             throw new Error('Mobile number already exists. Please use a different mobile number.');
         }
 
-        let referredUser = null;
-        if (referenceCode) {
-            referredUser = await userModel.findOne({ referralCode: referenceCode });
-            if (referredUser) {
-                const addMoneyRequest = new addMoneyModel({
-                    userId: referredUser._id,
-                    amount: 25,
-                    type: 'refer',
-                    status: 'pending'
-                });
-                await addMoneyRequest.save();
-            }
-        }
-
-        // Generate referral code for the new user
         const referralCode = await generateReferralCode(name);
 
-        // Create a new user document
         const newUser = new userModel({
             email,
             password,
@@ -62,6 +46,20 @@ const signup = async (req, res) => {
             userId: newUser._id,
             balance: 0
         });
+        let referredUser = null;
+        if (referenceCode) {
+            referredUser = await userModel.findOne({ referralCode: referenceCode });
+            if (referredUser) {
+                const addMoneyRequest = new addMoneyModel({
+                    userId: referredUser._id,
+                    amount: 25,
+                    type: 'refer',
+                    status: 'pending',
+                    refereUser: newUser._id
+                });
+                await addMoneyRequest.save();
+            }
+        }
         await newUserWallet.save();
 
         return res.status(201).json({ success: true, data: { ...newUser.toObject(), companyEmail: process.env.COMPANY_EMAIL } });

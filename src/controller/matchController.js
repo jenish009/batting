@@ -432,9 +432,50 @@ const getMatchById = async (req, res) => {
         return res.status(500).json({ success: false, error: error.message });
     }
 }
+
+const addPointToPlayerForMatch = async (req, res) => {
+    try {
+        let { point, playerId, matchId } = req.body;
+
+        let registrations = await UserRegistrationModel.findOne({ eventId: matchId });
+
+        if (!registrations) {
+            return res.status(404).json({ success: false, error: 'Registrations not found for the given matchId' });
+        }
+        registrations.find(obj => {
+            obj.teamData.find(obj2 => {
+                if (obj2.playerId.toString() === playerId) {
+                    return obj
+                }
+            })
+        })
+        // let matchingRegistration = registrations.teamData.find(data => data.playerId.toString() === playerId);
+
+        if (!matchingRegistration) {
+            return res.status(404).json({ success: false, error: 'Player not found in the registrations for the given matchId' });
+        }
+
+        // Update the points for the player
+        matchingRegistration.points += point;
+
+        // Save the updated registration
+        await registrations.save();
+
+        return res.json({ success: true, data: registrations });
+
+    } catch (error) {
+        if (error.message === "Unauthorized") {
+            return res.status(403).json({ success: false, error: 'Unauthorized' });
+        }
+        console.error('Error fetching events:', error);
+        return res.status(500).json({ success: false, error: error.message });
+    }
+};
+
 module.exports = {
     createMatch,
     getMatch,
     userRegistration,
-    getMatchById
+    getMatchById,
+    addPointToPlayerForMatch
 };

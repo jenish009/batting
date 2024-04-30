@@ -7,6 +7,8 @@ router
     .get('/getMatch', matchController.getMatch)
     .post('/userRegistration', matchController.userRegistration)
     .get('/getMatchById', matchController.getMatchById)
+    .post('/addPointToPlayerForMatch', matchController.addPointToPlayerForMatch)
+
 
 
 
