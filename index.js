@@ -54,7 +54,7 @@ app.get("/app/getMetaData", (req, res) => {
 });
 
 // Define and start the cron job
-cron.schedule("0 */5 * * * *", async () => {
+cron.schedule("0 */1 * * * *", async () => {
     try {
         const currentTime = new Date();
         console.log(currentTime);
@@ -65,6 +65,42 @@ cron.schedule("0 */5 * * * *", async () => {
 
         for (const event of events) {
             await eventController.luckyDraw({ query: { eventId: event._id } }, null); // Pass eventId to luckyDraw function
+        }
+        let eventRemaining = await eventModel.find({
+            time: { $gte: currentTime },
+            status: { $ne: "finished" },
+        });
+        eventRemaining = eventRemaining.filter(obj => obj.maxRegistrations > obj.registeredUsers.length)
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        currentTime.setHours(currentTime.getHours() + 6);
+
+        const day = String(currentTime.getDate()).padStart(2, '0');
+        const monthName = months[currentTime.getMonth()];
+        const formattedDate = `${day} ${monthName}`;
+
+        console.log(formattedDate);
+
+        if (eventRemaining.length == 0) {
+            await eventController.createEvent({
+                body: {
+                    "time": currentTime,
+                    "maxRegistrations": 3,
+                    "entryPrice": 50,
+                    "name": formattedDate,
+                    "status": "upcoming",
+                    "winningPrices": [
+                        {
+                            "rank": "1",
+                            "amount": 80
+                        },
+                        {
+                            "rank": "2",
+                            "amount": 60
+                        }
+                    ]
+                }
+            }, null);
+
         }
     } catch (error) {
         console.error("Error in cron job:", error);

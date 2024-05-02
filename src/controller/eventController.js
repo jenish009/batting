@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const moment = require('moment-timezone');
 
 const createEvent = async (req, res) => {
+    console.log(req.body)
     const { time, maxRegistrations, entryPrice, name, status, winningPrices } = req.body;
 
     try {
@@ -22,10 +23,14 @@ const createEvent = async (req, res) => {
 
         await newEvent.save();
 
-        return res.status(201).json({ success: true, message: 'Event added successfully', event: newEvent });
+        if (res) {
+            return res.status(201).json({ success: true, message: 'Event added successfully', event: newEvent });
+        }
     } catch (error) {
         console.error('Error adding event:', error);
-        return res.status(500).json({ success: false, error: error.message });
+        if (res) {
+            return res.status(500).json({ success: false, error: error.message });
+        }
     }
 }
 
